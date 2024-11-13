@@ -1,7 +1,6 @@
 import cv2
 import mediapipe as mp
 import pyautogui
-import numpy as np
 
 cap = cv2.VideoCapture(0)
 hand_detector = mp.solutions.hands.Hands()
