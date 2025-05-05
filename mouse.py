@@ -7,8 +7,109 @@ import screen_brightness_control as sbc
 import time
 import datetime  # Make sure this is at the top of your file
 import math
+import speech_recognition as sr
+import pyttsx3
+import subprocess
+import keyboard
 
 
+
+voice_mode = False
+last_command_time = 0
+VOICE_TIMEOUT = 10  # seconds of inactivity before auto-disable
+
+recognizer = sr.Recognizer()
+engine = pyttsx3.init()
+
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+def listen_command():
+    with sr.Microphone() as source:
+        print("Listening for command...")
+        audio = recognizer.listen(source, phrase_time_limit=5)
+        try:
+            command = recognizer.recognize_google(audio).lower()
+            print(f"[Voice Command] {command}")
+            return command
+        except sr.UnknownValueError:
+            return ""
+        except sr.RequestError:
+            return ""
+
+def launch_app(app_name):
+    apps = {
+        "chrome": "start chrome",
+        "notepad": "notepad",
+        "calculator": "calc",
+        "cmd": "start cmd"
+        # Add more mappings as needed
+    }
+    if app_name in apps:
+        subprocess.Popen(apps[app_name], shell=True)
+        speak(f"Opening {app_name}")
+    else:
+        speak(f"App {app_name} not recognized")
+
+def voice_assistant_loop():
+    global voice_mode, last_command_time
+    while True:
+        try:
+            if not voice_mode:
+                command = listen_command()
+                if "ok mouse" in command:
+                    speak("Voice command mode activated")
+                    voice_mode = True
+                    last_command_time = time.time()
+            else:
+                command = listen_command()
+                if command:
+                    last_command_time = time.time()
+                    if command.startswith("open "):
+                        app = command.replace("open ", "").strip()
+                        launch_app(app)
+                    elif "close window" in command:
+                        speak("Closing window")
+                        keyboard.press_and_release("alt+f4")
+                    elif "minimise window" in command:
+                        speak("Minimizing window")
+                        keyboard.press_and_release("win+down")
+                    elif "maximize window" in command:
+                        speak("Maximizing window")
+                        keyboard.press_and_release("win+up")
+                    elif "switch window" in command:
+                        speak("Switching window")
+                        keyboard.press("alt")
+                        keyboard.press_and_release("tab")
+                        keyboard.release("alt")
+                    elif "left click" in command:
+                        speak("Left clicking")
+                        pyautogui.click(button='left')
+                    elif "right click" in command:
+                        speak("Right clicking")
+                        pyautogui.click(button='right')
+                    elif "scroll up" in command:
+                        speak("Scrolling up")
+                        pyautogui.scroll(1500)  # Adjust the scroll amount if needed
+                    elif "scroll down" in command:
+                        speak("Scrolling down")
+                        pyautogui.scroll(-1500)
+                    elif "take a screenshot" in command:
+                        speak("Taking screenshot")
+                        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                        screenshot = pyautogui.screenshot()
+                        screenshot.save(f"screenshot_{timestamp}.png")
+                    else:
+                        speak("Command not recognized")
+                elif time.time() - last_command_time > VOICE_TIMEOUT:
+                    voice_mode = False
+                    speak("Voice mode disabled due to inactivity")
+        except Exception as e:
+            print(f"[Voice Thread Error] {e}")
+    
+voice_thread = threading.Thread(target=voice_assistant_loop, daemon=True)
+voice_thread.start()
 
 # Globals for thread-safe frame sharing
 latest_frame = None
