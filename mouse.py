@@ -84,27 +84,28 @@ while True:
 
         # Alt+Tab using right hand fist gesture (excluding thumb)
         if right_hand:
-            rh_landmarks = right_hand.landmark
-            thumb_tip = rh_landmarks[4]
-            index_tip = rh_landmarks[8]
-            middle_tip = rh_landmarks[12]
-            ring_tip = rh_landmarks[16]
-            pinky_tip = rh_landmarks[20]
+            rh = right_hand.landmark
+            thumb_tip = rh[4]
+            thumb_ip = rh[3]  # Thumb joint
+            index_tip = rh[8]
+            middle_tip = rh[12]
+            ring_tip = rh[16]
+            pinky_tip = rh[20]
 
-            # Check if only the thumb is extended (fist gesture with thumb out)
-            thumb_extended = thumb_tip.y < rh_landmarks[3].y  # Thumb extended (fist without thumb)
-            other_fingers_fisted = (index_tip.y > rh_landmarks[6].y and
-                                    middle_tip.y > rh_landmarks[10].y and
-                                    ring_tip.y > rh_landmarks[14].y and
-                                    pinky_tip.y > rh_landmarks[18].y)
+            # Detect: thumb extended AND other fingers bent
+            thumb_extended = thumb_tip.x < rh[2].x and thumb_tip.y < rh[3].y  # leftward & upward thumb
+            index_bent = index_tip.y > rh[6].y
+            middle_bent = middle_tip.y > rh[10].y
+            ring_bent = ring_tip.y > rh[14].y
+            pinky_bent = pinky_tip.y > rh[18].y
 
-            if thumb_extended and other_fingers_fisted:
+            if thumb_extended and index_bent and middle_bent and ring_bent and pinky_bent:
                 if not alt_tab_mode:
                     alt_tab_mode = True
+                    pyautogui.keyDown('alt')
                     alt_tab_time = time.time()
                     cv2.putText(frame, "ALT+TAB MODE ACTIVE", (int(w / 2) - 150, 30),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                    pyautogui.keyDown('alt')  # Hold down the Alt key to simulate Alt+Tab
 
         # Simulate "Tab" key press using left hand (thumb and index close together)
         if left_hand and alt_tab_mode:
