@@ -6,6 +6,7 @@ import threading
 import screen_brightness_control as sbc
 import time
 import datetime  # Make sure this is at the top of your file
+import math
 
 
 
@@ -58,6 +59,12 @@ alt_tab_mode = False
 alt_tab_time = 0
 last_tab_time = 0
 
+# Initialize scroll mode variables
+scroll_mode = False
+scroll_anchor_y = 0
+scroll_bar_height = 0
+scroll_bar_max = 300  # Max bar height for debug
+
 while True:
     with frame_lock:
         frame = latest_frame.copy() if latest_frame is not None else None
@@ -106,6 +113,49 @@ while True:
                     alt_tab_time = time.time()
                     cv2.putText(frame, "ALT+TAB MODE ACTIVE", (int(w / 2) - 150, 30),
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        # Inside your main processing loop after hand detection
+        if right_hand:
+            rh_lm = right_hand.landmark
+            thumb_tip = rh_lm[4]
+            pinky_tip = rh_lm[20]
+
+            # Calculate thumb-pinky distance
+            thumb_pinky_dist = math.hypot(thumb_tip.x - pinky_tip.x, thumb_tip.y - pinky_tip.y)
+
+            # Threshold to enter scroll mode
+            if thumb_pinky_dist < 0.05 and not brightness_mode and not zoom_mode and not alt_tab_mode and not scroll_mode:
+                scroll_mode = True
+                scroll_anchor_y = thumb_tip.y  # Anchor the thumb y-position
+                pyautogui.keyUp("alt")  # In case Alt was held in a previous mode
+
+            # Scroll logic
+            if scroll_mode:
+                current_y = thumb_tip.y
+                diff = scroll_anchor_y - current_y
+
+                # Convert difference to scroll steps (positive = scroll up, negative = scroll down)
+                scroll_amount = int(diff * 2500)  # Adjust multiplier for sensitivity
+
+                if abs(scroll_amount) > 1:
+                    pyautogui.scroll(scroll_amount)
+                    scroll_anchor_y = current_y  # Reset anchor to avoid rapid scroll
+
+                # Update scroll bar height for debug (visual)
+                scroll_bar_height = min(max(int(abs(diff) * scroll_bar_max), 0), scroll_bar_max)
+
+                # Exit scroll mode when thumb-pinky distance increases again
+                if thumb_pinky_dist > 0.07:
+                    scroll_mode = False
+                    scroll_bar_height = 0
+
+        # Draw scroll bar for debug
+        if scroll_mode:
+            bar_x = 50
+            bar_y = 200
+            bar_color = (255, 255, 0)
+            cv2.rectangle(frame, (bar_x, bar_y), (bar_x + 30, bar_y + scroll_bar_height), bar_color, cv2.FILLED)
+            cv2.putText(frame, 'Scroll', (bar_x, bar_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, bar_color, 2)
 
         # Simulate "Tab" key press using left hand (thumb and index close together)
         if left_hand and alt_tab_mode:
