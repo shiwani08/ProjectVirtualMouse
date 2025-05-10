@@ -12,8 +12,6 @@ import pyttsx3
 import subprocess
 import keyboard
 
-
-
 voice_mode = False
 last_command_time = 0
 VOICE_TIMEOUT = 10  # seconds of inactivity before auto-disable

@@ -1,0 +1,9 @@
+# to install this file use this command: pip install -r requirements.txt
+opencv-contrib-python
+mediapipe
+pyautogui
+numpy
+screen_brightness_control
+SpeechRecognition
+pyttsx3
+keyboard
