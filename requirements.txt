@@ -7,3 +7,4 @@ screen_brightness_control
 SpeechRecognition
 pyttsx3
 keyboard
+PyAudio
